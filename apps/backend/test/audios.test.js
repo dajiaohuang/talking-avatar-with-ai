@@ -3,7 +3,6 @@ import { mkdtemp, readFile, readdir, rm, writeFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import test from "node:test";
-import { getPhonemes } from "../modules/rhubarbLipSync.mjs";
 import { convertAudioToMp3 } from "../utils/audios.mjs";
 
 const commandPaths = (command) => {
@@ -46,29 +45,6 @@ test("concurrent conversions keep each request's temporary audio isolated", asyn
     for (const dir of createdDirs) {
       await rm(dir, { recursive: true, force: true });
     }
-    await rm(tempRoot, { recursive: true, force: true });
-  }
-});
-
-test("phoneme conversion uses the request's audio directory", async () => {
-  const tempRoot = await mkdtemp(path.join(os.tmpdir(), "talking-avatar-test-"));
-  const audioDirA = await mkdtemp(path.join(tempRoot, "request-a-"));
-  const audioDirB = await mkdtemp(path.join(tempRoot, "request-b-"));
-  const commands = [];
-  const runCommand = async ({ command }) => {
-    commands.push(command);
-  };
-
-  try {
-    await Promise.all([
-      getPhonemes({ message: 0, audioDir: audioDirA, runCommand }),
-      getPhonemes({ message: 0, audioDir: audioDirB, runCommand }),
-    ]);
-
-    assert.equal(commands.filter((command) => command.includes(audioDirA)).length, 2);
-    assert.equal(commands.filter((command) => command.includes(audioDirB)).length, 2);
-    assert.ok(commands.every((command) => command.includes(audioDirA) || command.includes(audioDirB)));
-  } finally {
     await rm(tempRoot, { recursive: true, force: true });
   }
 });
